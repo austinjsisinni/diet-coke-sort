@@ -1,0 +1,24 @@
+[package]
+name = "diet-coke-sort"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+authors = ["Austin Sisinni"]
+description = "FizzSort: a crisp, stable, adaptive sorting algorithm in safe Rust"
+license = "MIT"
+repository = "https://github.com/austinjsisinni/diet-coke-sort"
+readme = "README.md"
+keywords = ["sorting", "stable-sort", "adaptive", "algorithm"]
+categories = ["algorithms"]
+
+[lib]
+name = "diet_coke_sort"
+path = "src/lib.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[lints.clippy]
+all = "deny"
+pedantic = "deny"

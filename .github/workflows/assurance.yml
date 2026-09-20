@@ -1,0 +1,66 @@
+name: Assurance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assurance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Format, lint, and docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run static analysis
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Check API documentation
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --no-deps
+      - name: Run documentation tests
+        run: cargo test --doc
+
+  test:
+    name: Test (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux stable
+            os: ubuntu-latest
+            toolchain: stable
+          - name: Windows stable
+            os: windows-latest
+            toolchain: stable
+          - name: macOS stable
+            os: macos-latest
+            toolchain: stable
+          - name: Linux MSRV 1.74
+            os: ubuntu-latest
+            toolchain: 1.74.0
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install Rust ${{ matrix.toolchain }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - name: Run test suite
+        run: cargo test --all-targets --locked
+
