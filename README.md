@@ -8,7 +8,7 @@ zero sugar, zero dependencies, and zero tolerance for disorder. One calorie;
 `O(n log n)` worst-case comparisons. The math is refreshing.
 
 <p align="center">
-  <img src="assets/dietcoke-sort-nutrition-facts.png" width="640" alt="DietCokeSort nutrition facts: complexity, storage, stability, safety, dependencies, ingredients, and flavor varieties">
+  <img src="assets/dietcoke-sort-nutrition-facts.png" width="640" alt="DietCokeSort nutrition facts: already-sorted comparisons n - 1; worst-case comparisons O(n log n); auxiliary storage O(n) indices; value swaps at most n - 1; stable; no Clone required; unsafe code forbidden">
 </p>
 
 ```rust
