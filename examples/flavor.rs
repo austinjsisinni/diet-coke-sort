@@ -1,4 +1,4 @@
-//! Sort tasting notes by perceived crispness.
+//! Sort tasting notes by perceived crispness. The results are soda-lightful.
 
 use diet_coke_sort::sort_by;
 

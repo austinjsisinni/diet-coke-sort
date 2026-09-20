@@ -1,10 +1,10 @@
-//! `FizzSort`: a crisp, stable, adaptive sorting algorithm.
+//! `DietCokeSort`: a crisp, stable, adaptive sorting algorithm with zero sugar
+//! and zero tolerance for disorder.
 //!
-//! `FizzSort` discovers monotonic runs, extends short runs with stable binary
-//! insertion, merges the runs through an index permutation, and only then
-//! rearranges the input. Keeping comparisons separate from mutation gives the
-//! algorithm a strong guarantee: if the comparator panics, the input has not
-//! been changed.
+//! `DietCokeSort` discovers monotonic runs (Classic), crisps short runs with
+//! stable binary insertion (Lime), merges an index permutation (Feisty Cherry),
+//! and only then rearranges the input (Caffeine Free). Comparisons stay separate
+//! from mutation, so a panicking comparator cannot shake up the input.
 //!
 //! # Example
 //!
@@ -20,13 +20,14 @@
 
 use std::cmp::Ordering;
 
-/// The target size used when crisping short natural runs.
+/// The target size used when crisping short natural runs: 32 elements, not
+/// fluid ounces.
 ///
 /// A fixed bound keeps insertion work linear in the input length while giving
 /// merges enough locally ordered data to work efficiently.
 pub const CRISP_RUN: usize = 32;
 
-/// Measurements captured during one `FizzSort` execution.
+/// The nutrition label captured during one `DietCokeSort` execution.
 ///
 /// Counts saturate at [`usize::MAX`] instead of overflowing.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -39,37 +40,37 @@ pub struct SortReport {
 }
 
 impl SortReport {
-    /// Returns the number of elements presented to the sorter.
+    /// Returns the serving size, measured in elements rather than cans.
     #[must_use]
     pub const fn len(self) -> usize {
         self.len
     }
 
-    /// Returns `true` when the input contained no elements.
+    /// Returns `true` when somebody forgot to restock the fridge.
     #[must_use]
     pub const fn is_empty(self) -> bool {
         self.len == 0
     }
 
-    /// Returns the number of natural or crisped runs discovered initially.
+    /// Returns the number of natural or Lime-crisped runs found initially.
     #[must_use]
     pub const fn initial_runs(self) -> usize {
         self.initial_runs
     }
 
-    /// Returns the number of pairwise merges performed.
+    /// Returns the number of pairwise merges—the algorithm's flavor blending.
     #[must_use]
     pub const fn merges(self) -> usize {
         self.merges
     }
 
-    /// Returns the number of comparator calls.
+    /// Returns the comparator-call count. Every sip is accounted for.
     #[must_use]
     pub const fn comparisons(self) -> usize {
         self.comparisons
     }
 
-    /// Returns the number of element swaps used to apply the permutation.
+    /// Returns the swaps used for the clean finish. No sticky residue included.
     #[must_use]
     pub const fn swaps(self) -> usize {
         self.swaps
@@ -82,7 +83,7 @@ struct Run {
     end: usize,
 }
 
-/// Stably sorts a slice in ascending order and returns execution measurements.
+/// Stably sorts a slice in ascending order—the classic silver-can pour.
 ///
 /// This sort is deterministic and adaptive. An already sorted input takes
 /// linear time. In the worst case it performs `O(n log n)` comparisons, uses
@@ -99,7 +100,7 @@ pub fn sort<T: Ord>(values: &mut [T]) -> SortReport {
     sort_by(values, Ord::cmp)
 }
 
-/// Stably sorts a slice using a comparator and returns execution measurements.
+/// Stably sorts with a custom comparator: the Freestyle machine of this API.
 ///
 /// The comparator must define a total order. Equal elements retain their
 /// original relative order. All comparisons finish before `values` is changed;
