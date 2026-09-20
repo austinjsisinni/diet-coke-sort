@@ -61,20 +61,56 @@ when stability, auditability, comparator-panic isolation, or moving large values
 sparingly matters more than winning every microbenchmark. Sometimes the
 original formula is the right order; sometimes you want Black Cherry Vanilla.
 
-## API: Application Pouring Interface
+## Flavor interface: pick your pour
+
+The flavors are zero-sized Rust types implementing `SortFlavor<T>`. Dispatch is
+static, so the interface adds no runtime tag or mystery syrup.
+
+| Flavor | Best served with | Engine | Report |
+|---|---|---|---|
+| `DietCoke` | `i8` through `i128`, `u8` through `u128`, strings, big integers, exact decimals, any `Ord` type | DietCokeSort | `SortReport` |
+| `DietCokeWithLime` | `f64` | DietCokeSort + `f64::total_cmp` | `SortReport` |
+| `DietCokeWithLimeCaffeineFree` | `f32` | DietCokeSort + `f32::total_cmp` | `SortReport` |
+| `CocaColaSort` | any `Ord` type | Rust's `slice::sort` | `()`—no tasting notes; how lame |
 
 ```rust
-use diet_coke_sort::{sort, sort_by};
+use diet_coke_sort::{
+    CocaColaSort, DietCoke, DietCokeWithLime,
+    DietCokeWithLimeCaffeineFree, SortFlavor,
+};
 
-let mut classic = [3, 1, 2];
-let report = sort(&mut classic);
-assert_eq!(classic, [1, 2, 3]);
-assert!(report.comparisons() > 0);
+let mut integers = [i128::MAX, 0, i128::MIN];
+let report = DietCoke.sort(&mut integers);
+assert_eq!(integers, [i128::MIN, 0, i128::MAX]);
+assert_eq!(report.len(), 3);
 
-let mut reverse = [3, 1, 2];
-sort_by(&mut reverse, |left, right| right.cmp(left));
-assert_eq!(reverse, [3, 2, 1]);
+let mut precise = [f64::NAN, f64::from_bits(1), -0.0, 0.0, f64::MAX];
+DietCokeWithLime.sort(&mut precise);
+assert!(precise.windows(2).all(|pair| pair[0].total_cmp(&pair[1]).is_le()));
+
+let mut compact = [f32::INFINITY, f32::MIN_POSITIVE, f32::NEG_INFINITY];
+DietCokeWithLimeCaffeineFree.sort(&mut compact);
+assert_eq!(compact, [f32::NEG_INFINITY, f32::MIN_POSITIVE, f32::INFINITY]);
+
+let mut full_sugar = [3, 1, 2];
+CocaColaSort.sort(&mut full_sugar);
+assert_eq!(full_sugar, [1, 2, 3]);
 ```
+
+### Precision without the sugar coating
+
+The lime flavors use Rust's `total_cmp`, which follows IEEE 754 `totalOrder`:
+negative and positive zero are distinct, subnormals keep their exact bits, and
+NaNs receive a deterministic place instead of making comparison shrug. Sorting
+does no arithmetic, normalization, parsing, or conversion, so it cannot round
+the values. The active [IEEE 754-2019 standard](https://standards.ieee.org/ieee/754/6210/)
+covers binary and decimal floating-point arithmetic; Rust documents the exact
+[`f64::total_cmp` sequence](https://doc.rust-lang.org/stable/core/primitive.f64.html#method.total_cmp).
+
+For precision beyond built-in floats, use `DietCoke` with an arbitrary-precision
+type implementing `Ord`, or use `sort_by` with that type's exact comparator.
+The algorithm only asks, “which comes first?” It never takes a sip of your
+digits.
 
 Run `cargo run --example flavor` for a tasting flight. Discontinued Diet Coke
 variants are welcome; programs are famously bad at checking store inventory.
@@ -93,6 +129,8 @@ desk.
 | Stable ties and custom comparators | duplicate-heavy, descending-run, and custom-order tests |
 | Empty and singleton inputs | boundary tests |
 | Comparator panic leaves input unchanged | injected-panic test |
+| Exact extreme, subnormal, adjacent-float, signed-zero, infinity, and NaN handling | bit-for-bit `f32` and `f64` reference-order tests |
+| Arbitrary-width precision | 512-bit ordered-value test with no conversion or arithmetic |
 | Determinism and complexity invariants | report, sorted-stream, and swap-bound tests |
 | Safe, documented, portable Rust | forbidden `unsafe`, Clippy, rustdoc, doctests, three-OS CI, Rust 1.74 MSRV |
 

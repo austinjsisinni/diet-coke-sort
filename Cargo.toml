@@ -1,6 +1,6 @@
 [package]
 name = "diet-coke-sort"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.74"
 authors = ["Austin Sisinni"]
@@ -8,7 +8,7 @@ description = "DietCokeSort: a crisp, stable, adaptive sorting algorithm in safe
 license = "MIT"
 repository = "https://github.com/austinjsisinni/diet-coke-sort"
 readme = "README.md"
-keywords = ["sorting", "stable-sort", "adaptive", "algorithm"]
+keywords = ["sorting", "stable-sort", "adaptive", "algorithm", "floating-point"]
 categories = ["algorithms"]
 
 [lib]

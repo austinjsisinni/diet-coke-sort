@@ -9,8 +9,10 @@
 //! # Example
 //!
 //! ```
+//! use diet_coke_sort::{DietCoke, SortFlavor};
+//!
 //! let mut values = [5, 1, 4, 1, 3];
-//! let report = diet_coke_sort::sort(&mut values);
+//! let report = DietCoke.sort(&mut values);
 //!
 //! assert_eq!(values, [1, 1, 3, 4, 5]);
 //! assert_eq!(report.len(), 5);
@@ -26,6 +28,48 @@ use std::cmp::Ordering;
 /// A fixed bound keeps insertion work linear in the input length while giving
 /// merges enough locally ordered data to work efficiently.
 pub const CRISP_RUN: usize = 32;
+
+/// A zero-cost interface implemented by every sorting flavor.
+///
+/// The associated report lets instrumented Diet Coke flavors return
+/// [`SortReport`] while [`CocaColaSort`] returns `()` after delegating to Rust.
+/// That is static dispatch: no trait object, runtime tag, or mystery syrup.
+pub trait SortFlavor<T> {
+    /// The evidence returned after this flavor finishes sorting.
+    type Report;
+
+    /// Sorts `values` according to this flavor's documented total order.
+    fn sort(&self, values: &mut [T]) -> Self::Report;
+}
+
+/// The original `DietCokeSort` flavor for every type implementing [`Ord`].
+///
+/// This is the standard pour for integers, strings, and arbitrary-precision
+/// numeric types. It performs no numeric conversion or arithmetic, so every
+/// digit stays in its own lane.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct DietCoke;
+
+/// The lime-forward `f64` flavor.
+///
+/// It uses [`f64::total_cmp`] to provide the IEEE 754 `totalOrder` sequence,
+/// including infinities, subnormals, signed zero, and every NaN bit pattern.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct DietCokeWithLime;
+
+/// The caffeine-free lime `f32` flavor.
+///
+/// It uses [`f32::total_cmp`] for the IEEE 754 `totalOrder` sequence. Fewer
+/// bits, fewer jitters, same deterministic treatment of special values.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct DietCokeWithLimeCaffeineFree;
+
+/// The full-sugar fallback that calls Rust's standard stable slice sort.
+///
+/// There is no [`SortReport`]; this flavor returns `()`. It is dependable and
+/// highly tuned, just not wearing the artisanal silver can.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct CocaColaSort;
 
 /// The nutrition label captured during one `DietCokeSort` execution.
 ///
@@ -98,6 +142,38 @@ struct Run {
 /// ```
 pub fn sort<T: Ord>(values: &mut [T]) -> SortReport {
     sort_by(values, Ord::cmp)
+}
+
+impl<T: Ord> SortFlavor<T> for DietCoke {
+    type Report = SortReport;
+
+    fn sort(&self, values: &mut [T]) -> Self::Report {
+        sort(values)
+    }
+}
+
+impl SortFlavor<f64> for DietCokeWithLime {
+    type Report = SortReport;
+
+    fn sort(&self, values: &mut [f64]) -> Self::Report {
+        sort_by(values, f64::total_cmp)
+    }
+}
+
+impl SortFlavor<f32> for DietCokeWithLimeCaffeineFree {
+    type Report = SortReport;
+
+    fn sort(&self, values: &mut [f32]) -> Self::Report {
+        sort_by(values, f32::total_cmp)
+    }
+}
+
+impl<T: Ord> SortFlavor<T> for CocaColaSort {
+    type Report = ();
+
+    fn sort(&self, values: &mut [T]) -> Self::Report {
+        values.sort();
+    }
 }
 
 /// Stably sorts with a custom comparator: the Freestyle machine of this API.
@@ -343,7 +419,10 @@ fn apply_permutation<T>(values: &mut [T], order: &[usize], targets: &mut [usize]
 
 #[cfg(test)]
 mod tests {
-    use super::{sort, sort_by, CRISP_RUN};
+    use super::{
+        sort, sort_by, CocaColaSort, DietCoke, DietCokeWithLime,
+        DietCokeWithLimeCaffeineFree, SortFlavor, CRISP_RUN,
+    };
     use std::cell::Cell;
     use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -351,6 +430,103 @@ mod tests {
     struct Tagged {
         key: i32,
         source_position: usize,
+    }
+
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+    struct WideUnsigned([u64; 8]);
+
+    #[test]
+    fn flavor_interface_routes_the_classic_and_full_sugar_pours() {
+        let mut diet_values = [i128::MAX, 0, i128::MIN, -1, 1];
+        let diet_report = DietCoke.sort(&mut diet_values);
+        assert_eq!(diet_values, [i128::MIN, -1, 0, 1, i128::MAX]);
+        assert_eq!(diet_report.len(), diet_values.len());
+
+        let mut cola_values = [5_i32, 1, 4, 2, 3];
+        let _: () = CocaColaSort.sort(&mut cola_values);
+        assert_eq!(cola_values, [1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn diet_coke_with_lime_totally_orders_every_f64_class_without_rounding() {
+        let mut values = [
+            f64::NAN,
+            f64::from_bits(1),
+            -0.0,
+            f64::MAX,
+            f64::NEG_INFINITY,
+            f64::from_bits(0xfff8_0000_0000_0001),
+            1.0,
+            f64::from_bits(1.0_f64.to_bits() + 1),
+            f64::INFINITY,
+            f64::MIN_POSITIVE,
+            -f64::MAX,
+            0.0,
+            -f64::MIN_POSITIVE,
+            f64::from_bits(0x7ff0_0000_0000_0001),
+            f64::from_bits(0x8000_0000_0000_0001),
+        ];
+        let mut expected = values;
+        expected.sort_unstable_by(f64::total_cmp);
+
+        let report = DietCokeWithLime.sort(&mut values);
+
+        let actual_bits: Vec<_> = values.into_iter().map(f64::to_bits).collect();
+        let expected_bits: Vec<_> = expected.into_iter().map(f64::to_bits).collect();
+        assert_eq!(actual_bits, expected_bits);
+        assert_eq!(report.len(), actual_bits.len());
+    }
+
+    #[test]
+    fn caffeine_free_lime_totally_orders_f32_without_rounding() {
+        let mut values = [
+            f32::NAN,
+            f32::from_bits(1),
+            -0.0,
+            f32::MAX,
+            f32::NEG_INFINITY,
+            f32::from_bits(0xffc0_0001),
+            1.0,
+            f32::from_bits(1.0_f32.to_bits() + 1),
+            f32::INFINITY,
+            f32::MIN_POSITIVE,
+            -f32::MAX,
+            0.0,
+            -f32::MIN_POSITIVE,
+            f32::from_bits(0x7f80_0001),
+            f32::from_bits(0x8000_0001),
+        ];
+        let mut expected = values;
+        expected.sort_unstable_by(f32::total_cmp);
+
+        let report = DietCokeWithLimeCaffeineFree.sort(&mut values);
+
+        let actual_bits: Vec<_> = values.into_iter().map(f32::to_bits).collect();
+        let expected_bits: Vec<_> = expected.into_iter().map(f32::to_bits).collect();
+        assert_eq!(actual_bits, expected_bits);
+        assert_eq!(report.len(), actual_bits.len());
+    }
+
+    #[test]
+    fn classic_flavor_preserves_arbitrary_width_integer_precision() {
+        let mut values = [
+            WideUnsigned([u64::MAX; 8]),
+            WideUnsigned([0; 8]),
+            WideUnsigned([0, 0, 0, 0, 0, 0, 0, 1]),
+            WideUnsigned([0, 0, 0, 1, 0, 0, 0, 0]),
+        ];
+
+        DietCoke.sort(&mut values);
+
+        assert_eq!(
+            values,
+            [
+                WideUnsigned([0; 8]),
+                WideUnsigned([0, 0, 0, 0, 0, 0, 0, 1]),
+                WideUnsigned([0, 0, 0, 1, 0, 0, 0, 0]),
+                WideUnsigned([u64::MAX; 8]),
+            ]
+        );
     }
 
     #[test]
