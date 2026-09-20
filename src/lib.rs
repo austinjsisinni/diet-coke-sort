@@ -420,8 +420,8 @@ fn apply_permutation<T>(values: &mut [T], order: &[usize], targets: &mut [usize]
 #[cfg(test)]
 mod tests {
     use super::{
-        sort, sort_by, CocaColaSort, DietCoke, DietCokeWithLime,
-        DietCokeWithLimeCaffeineFree, SortFlavor, CRISP_RUN,
+        sort, sort_by, CocaColaSort, DietCoke, DietCokeWithLime, DietCokeWithLimeCaffeineFree,
+        SortFlavor, CRISP_RUN,
     };
     use std::cell::Cell;
     use std::panic::{catch_unwind, AssertUnwindSafe};
