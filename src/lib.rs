@@ -1,6 +1,6 @@
-//! FizzSort: a crisp, stable, adaptive sorting algorithm.
+//! `FizzSort`: a crisp, stable, adaptive sorting algorithm.
 //!
-//! FizzSort discovers monotonic runs, extends short runs with stable binary
+//! `FizzSort` discovers monotonic runs, extends short runs with stable binary
 //! insertion, merges the runs through an index permutation, and only then
 //! rearranges the input. Keeping comparisons separate from mutation gives the
 //! algorithm a strong guarantee: if the comparator panics, the input has not
@@ -26,7 +26,7 @@ use std::cmp::Ordering;
 /// merges enough locally ordered data to work efficiently.
 pub const CRISP_RUN: usize = 32;
 
-/// Measurements captured during one FizzSort execution.
+/// Measurements captured during one `FizzSort` execution.
 ///
 /// Counts saturate at [`usize::MAX`] instead of overflowing.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -134,7 +134,7 @@ where
     let mut merges = 0_usize;
 
     while runs.len() > 1 {
-        let mut next_runs = Vec::with_capacity((runs.len() + 1) / 2);
+        let mut next_runs = Vec::with_capacity(runs.len().div_ceil(2));
         let mut pairs = runs.chunks_exact(2);
 
         for pair in &mut pairs {
@@ -186,7 +186,7 @@ where
     F: FnMut(&T, &T) -> Ordering,
 {
     let len = order.len();
-    let mut runs = Vec::with_capacity((len + CRISP_RUN - 1) / CRISP_RUN);
+    let mut runs = Vec::with_capacity(len.div_ceil(CRISP_RUN));
     let mut start = 0;
 
     while start < len {
