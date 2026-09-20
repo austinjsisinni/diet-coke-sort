@@ -7,6 +7,10 @@
 zero sugar, zero dependencies, and zero tolerance for disorder. One calorie;
 `O(n log n)` worst-case comparisons. The math is refreshing.
 
+<p align="center">
+  <img src="assets/dietcoke-sort-nutrition-facts.png" width="640" alt="DietCokeSort nutrition facts: already-sorted comparisons n - 1; worst-case comparisons O(n log n); auxiliary storage O(n) indices; value swaps at most n - 1; stable; no Clone required; unsafe code forbidden">
+</p>
+
 ```rust
 let mut cans = [5, 1, 4, 1, 3];
 let report = diet_coke_sort::sort(&mut cans);
@@ -44,16 +48,6 @@ particular combination and assurance story.
    index on equality. The values remain calmer than an unopened can.
 4. **Caffeine Free—clean finish.** Apply the completed permutation in cycles
    with at most `n - 1` swaps. No jitters, no sticky aftertaste.
-
-| Nutrition fact | Amount per sort |
-|---|---|
-| Already-sorted comparisons | `n - 1` |
-| Worst-case comparisons | `O(n log n)` |
-| Auxiliary storage | `O(n)` indices |
-| Value swaps | at most `n - 1` |
-| Stable | yes |
-| Requires `Clone` | no |
-| Unsafe code | forbidden |
 
 The fine print: `O(n)` index storage and indirect comparisons can lose to
 Rust's highly tuned standard sorts for small, cheap values. Choose DietCokeSort
