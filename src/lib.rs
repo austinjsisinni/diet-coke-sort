@@ -193,37 +193,23 @@ where
         let mut end = start + 1;
 
         if end < len {
-            let descending = counted_compare(
-                values,
-                order[start],
-                order[end],
-                compare,
-                comparisons,
-            ) == Ordering::Greater;
+            let descending =
+                counted_compare(values, order[start], order[end], compare, comparisons)
+                    == Ordering::Greater;
             end += 1;
 
             if descending {
                 while end < len
-                    && counted_compare(
-                        values,
-                        order[end - 1],
-                        order[end],
-                        compare,
-                        comparisons,
-                    ) == Ordering::Greater
+                    && counted_compare(values, order[end - 1], order[end], compare, comparisons)
+                        == Ordering::Greater
                 {
                     end += 1;
                 }
                 order[start..end].reverse();
             } else {
                 while end < len
-                    && counted_compare(
-                        values,
-                        order[end - 1],
-                        order[end],
-                        compare,
-                        comparisons,
-                    ) != Ordering::Greater
+                    && counted_compare(values, order[end - 1], order[end], compare, comparisons)
+                        != Ordering::Greater
                 {
                     end += 1;
                 }
@@ -232,15 +218,7 @@ where
 
         let crisp_end = start.saturating_add(CRISP_RUN).min(len);
         if end < crisp_end {
-            stable_binary_extend(
-                values,
-                order,
-                start,
-                end,
-                crisp_end,
-                compare,
-                comparisons,
-            );
+            stable_binary_extend(values, order, start, end, crisp_end, compare, comparisons);
             end = crisp_end;
         }
 
@@ -517,7 +495,10 @@ mod tests {
             expected.sort_unstable();
 
             let report = sort(&mut actual);
-            assert_eq!(actual, expected, "failed deterministic case of length {len}");
+            assert_eq!(
+                actual, expected,
+                "failed deterministic case of length {len}"
+            );
             assert!(report.swaps() <= len.saturating_sub(1));
         }
     }

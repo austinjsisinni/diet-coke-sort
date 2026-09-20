@@ -1,3 +1,5 @@
+//! Sort tasting notes by perceived crispness.
+
 use diet_coke_sort::sort_by;
 
 #[derive(Debug)]

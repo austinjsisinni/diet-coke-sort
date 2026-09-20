@@ -16,10 +16,10 @@ concurrency:
 jobs:
   quality:
     name: Format, lint, and docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -42,25 +42,24 @@ jobs:
       matrix:
         include:
           - name: Linux stable
-            os: ubuntu-latest
+            os: ubuntu-24.04
             toolchain: stable
           - name: Windows stable
-            os: windows-latest
+            os: windows-2025
             toolchain: stable
           - name: macOS stable
-            os: macos-latest
+            os: macos-15
             toolchain: stable
           - name: Linux MSRV 1.74
-            os: ubuntu-latest
+            os: ubuntu-24.04
             toolchain: 1.74.0
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install Rust ${{ matrix.toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
       - name: Run test suite
         run: cargo test --all-targets --locked
-
